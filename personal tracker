@@ -1,0 +1,312 @@
+.gitignore
+_pycache_/
+*.pyc
+*.pyo
+*.pyd
+
+venv/
+env/
+
+.vscode/
+.idea/
+
+*.log
+
+.DS_Store
+Thumbs.db
+
+expenses_backup.json
+
+expenses.py
+
+from datetime import datetime
+
+class Expense:
+    def _init_(self, date, amount, category, description):
+        self.date = date
+        self.amount = float(amount)
+        self.category = category
+        self.description = description
+
+    def to_dict(self):
+        return {
+            "date": self.date,
+            "amount": self.amount,
+            "category": self.category,
+            "description": self.description
+        }
+
+    @staticmethod
+    def validate_date(date_str):
+        try:
+            datetime.strptime(date_str, "%Y-%m-%d")
+            return True
+        except ValueError:
+            return False
+
+
+class ExpenseManager:
+    def _init_(self):
+        self.expenses = []
+
+    def add_expense(self, expense):
+        self.expenses.append(expense)
+
+    def remove_expense(self, index):
+        if 0 <= index < len(self.expenses):
+            self.expenses.pop(index)
+            return True
+        return False
+
+    def search_by_category(self, category):
+        return [
+            exp for exp in self.expenses
+            if exp.category.lower() == category.lower()
+        ]
+
+    def get_all_expenses(self):
+        return self.expenses
+
+file_handler.py
+
+import json
+import os
+from expenses import Expense
+
+FILE_NAME = "expenses.json"
+
+
+def save_expenses(expenses):
+    data = [expense.to_dict() for expense in expenses]
+
+    with open(FILE_NAME, "w") as file:
+        json.dump(data, file, indent=4)
+
+
+def load_expenses():
+    expenses = []
+
+    if not os.path.exists(FILE_NAME):
+        return expenses
+
+    try:
+        with open(FILE_NAME, "r") as file:
+            data = json.load(file)
+
+        for item in data:
+            expenses.append(
+                Expense(
+                    item["date"],
+                    item["amount"],
+                    item["category"],
+                    item["description"]
+                )
+            )
+
+    except (json.JSONDecodeError, PermissionError):
+        print("Error loading expense file.")
+
+    return expenses
+
+reports.py
+
+def monthly_summary(expenses):
+    summary = defaultdict(float)
+
+    for exp in expenses:
+        month = exp.date[:7]
+        summary[month] += exp.amount
+
+    return summary
+
+
+def category_breakdown(expenses):
+    categories = defaultdict(float)
+
+    for exp in expenses:
+        categories[exp.category] += exp.amount
+
+    return categories
+
+
+def display_report(expenses):
+    print("\n===== MONTHLY SUMMARY =====")
+
+    monthly = monthly_summary(expenses)
+
+    for month, amount in monthly.items():
+        print(f"{month}: ₹{amount:.2f}")
+
+    print("\n===== CATEGORY BREAKDOWN =====")
+
+    categories = category_breakdown(expenses)
+
+    for category, amount in categories.items():
+        print(f"{category}: ₹{amount:.from collections import defaultdict
+
+2f}")
+
+main.py
+
+from expenses import Expense, ExpenseManager
+from file_handler import save_expenses, load_expenses
+from reports import display_report
+
+
+class FinanceTracker:
+    def _init_(self):
+        self.manager = ExpenseManager()
+        self.manager.expenses = load_expenses()
+
+    def add_expense(self):
+        date = input("Date (YYYY-MM-DD): ")
+
+        if not Expense.validate_date(date):
+            print("Invalid date format!")
+            return
+
+        try:
+            amount = float(input("Amount: "))
+        except ValueError:
+            print("Invalid amount!")
+            return
+
+        category = input("Category: ")
+        description = input("Description: ")
+
+        expense = Expense(
+            date,
+            amount,
+            category,
+            description
+        )
+
+        self.manager.add_expense(expense)
+
+        save_expenses(self.manager.expenses)
+
+        print("Expense added successfully.")
+
+    def view_expenses(self):
+        expenses = self.manager.get_all_expenses()
+
+        if not expenses:
+            print("No expenses found.")
+            return
+
+        print("\n===== EXPENSES =====")
+
+        for i, exp in enumerate(expenses):
+            print(
+                f"{i+1}. "
+                f"{exp.date} | "
+                f"₹{exp.amount:.2f} | "
+                f"{exp.category} | "
+                f"{exp.description}"
+            )
+
+    def delete_expense(self):
+        self.view_expenses()
+
+        try:
+            index = int(input("Expense number to delete: ")) - 1
+
+            if self.manager.remove_expense(index):
+                save_expenses(self.manager.expenses)
+                print("Expense deleted.")
+            else:
+                print("Invalid selection.")
+
+        except ValueError:
+            print("Invalid input.")
+
+    def search_expenses(self):
+        category = input("Enter category: ")
+
+        results = self.manager.search_by_category(category)
+
+        if not results:
+            print("No matching expenses.")
+            return
+
+        print("\nResults:")
+
+        for exp in results:
+            print(
+                f"{exp.date} | "
+                f"₹{exp.amount:.2f} | "
+                f"{exp.category} | "
+                f"{exp.description}"
+            )
+
+    def reports(self):
+        display_report(self.manager.expenses)
+
+    def run(self):
+        while True:
+            print("\n" + "=" * 40)
+            print("PERSONAL FINANCE TRACKER")
+            print("=" * 40)
+            print("1. Add Expense")
+            print("2. View Expenses")
+            print("3. Delete Expense")
+            print("4. Search by Category")
+            print("5. Reports")
+            print("6. Exit")
+
+            choice = input("Enter choice: ")
+
+            if choice == "1":
+                self.add_expense()
+
+            elif choice == "2":
+                self.view_expenses()
+
+            elif choice == "3":
+                self.delete_expense()
+
+            elif choice == "4":
+                self.search_expenses()
+
+            elif choice == "5":
+                self.reports()
+
+            elif choice == "6":
+                print("Goodbye!")
+                break
+
+            else:
+                print("Invalid choice.")
+
+
+if _name_ == "_main_":
+    app = FinanceTracker()
+    app.run()
+
+test_inputs.txt
+
+1
+2026-06-01
+500
+Food
+Lunch
+
+1
+2026-06-02
+1200
+Transport
+Bus Pass
+
+2
+
+4
+Food
+
+5
+
+3
+1
+
+2
+
+6
